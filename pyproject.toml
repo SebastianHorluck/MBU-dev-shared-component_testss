@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=65.0", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mbu_dev_shared_components"
+dynamic = ["version"]
+authors = [
+  { name="MBU", email="rpa@mbu.aarhus.dk" },
+]
+description = "Shared components to use in RPA projects"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+]
+dependencies = [
+  "openpyxl >= 3.1.2",
+  "pyodbc >= 5.1.0",
+  "requests_ntlm >= 1.2.0",
+  "python-dateutil == 2.9.*",
+  "cryptography >= 43.0.0",
+  "office365-rest-python-client",
+  "uiautomation",
+]
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "dirty-tag"
