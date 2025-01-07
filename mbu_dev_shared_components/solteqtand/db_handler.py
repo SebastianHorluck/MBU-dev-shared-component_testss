@@ -38,12 +38,15 @@ class SolteqTandDatabase:
         result = {'data': dict(zip(columns, row)) for row in rows}
         return result
 
-    def check_if_document_exists(self, filename: str, documenttype: str = None):
+    def check_if_document_exists(self, filename: str, documenttype: str = None, form_id: str = None):
         """
-        Checks if a document with the given filename exists for the specified patient.
+        Checks if a document with the given filename exists for the specified patient,
+        optionally filtering by document type and form ID.
 
         Args:
             filename (str): Name of the file to search for.
+            documenttype (str, optional): Type of the document to filter by.
+            form_id (str, optional): Form ID to filter by.
 
         Returns:
             list: A list of matching document records.
@@ -71,27 +74,36 @@ class SolteqTandDatabase:
                 FROM [tmtdata_prod].[dbo].[DocumentStore] ds
                 JOIN DocumentStoreStatus dss ON ds.DocumentId = dss.DocumentId
             )
-            SELECT  ds.DocumentId,
-                    ds.entityId,
-                    ds.OriginalFilename,
-                    ds.UniqueFilename,
-                    ds.DocumentType,
-                    ds.DocumentCreatedDate,
-                    ds.DocumentLastEditedDate,
-                    ds.SentToNemSMS,
-                    p.cpr
+            SELECT
+                ds.DocumentId,
+                ds.entityId,
+                ds.OriginalFilename,
+                ds.UniqueFilename,
+                ds.DocumentType,
+                ds.DocumentDescription,
+                ds.DocumentCreatedDate,
+                ds.DocumentLastEditedDate,
+                ds.SentToNemSMS,
+                p.cpr
             FROM [tmtdata_prod].[dbo].[PATIENT] p
             JOIN LatestActiveDocuments ds ON ds.entityId = p.patientId
             WHERE ds.rn = 1
-            AND ds.DocumentStoreStatusId = 1
-            AND p.cpr = ?
-            AND ds.OriginalFilename = ?
+                AND ds.DocumentStoreStatusId = 1
+                AND p.cpr = ?
+                AND ds.OriginalFilename = ?
         """
+
+        params = [self.ssn, filename]
+
         if documenttype:
             query += " AND ds.DocumentType = ?"
-            params = (self.ssn, filename, documenttype)
-        else:
-            params = (self.ssn, filename)
+            params.append(documenttype)
+
+        if form_id:
+            query += " AND ds.DocumentDescription = ?"
+            params.append(form_id)
+
+        params = tuple(params)
 
         return self._execute_query(query, params)
 

@@ -254,7 +254,7 @@ class SolteqTandApp:
             tab_button.SetFocus()
             tab_button.SendKeys('{ENTER}')
 
-    def create_document(self, document_full_path: str = None, document_type: str = None):
+    def create_document(self, document_full_path: str = None, document_type: str = None, document_description: str = None):
         """
         Creates a new document under the 'Dokumenter' tab.
 
@@ -312,6 +312,15 @@ class SolteqTandApp:
                 name=document_type
             )
             document_type_button.Click(simulateMove=False, waitTime=0)
+
+        if document_description:
+            description_text_field = self.find_element_by_property(
+                control=create_document_window,
+                control_type=auto.ControlType.DocumentControl,
+                automation_id="richTextBoxDescription"
+            )
+            value_pattern = description_text_field.GetPattern(auto.PatternId.ValuePattern)
+            value_pattern.SetValue(document_description)
 
         button_create_document = self.find_element_by_property(
             control=create_document_window,
