@@ -204,3 +204,41 @@ class SolteqTandDatabase:
             WHERE p.cpr = ?
         """
         return self._execute_query(query, (self.ssn))
+
+    def get_journal_notes(self, note_message: str = None):
+        """
+        Fetches the journal notes for the specified patient.
+
+        Returns:
+            dict: A dictionary containing the journal notes.
+        """
+        query = """
+            SELECT
+                dn.Beskrivelse,
+                ds.Dokumenteret,
+                ds.Besluttet,
+                ds.Art,
+                ds.EjerArt
+            FROM
+                [tmtdata_prod].[dbo].[Forloeb] f
+            JOIN
+                ForloebSymbolisering fs ON fs.ForloebID = f.ForloebID
+            JOIN
+                DiagnoseStatus ds ON ds.GEpjID = fs.DiagnoseID
+            JOIN
+                DiagnostikNotat dn ON dn.KontekstID = ds.KontekstID
+            JOIN
+                PATIENT p ON p.patientId = f.patientId
+            WHERE
+                p.cpr = ?
+        """
+        params = [self.ssn]
+
+        if note_message:
+            query += " AND dn.Beskrivelse = ?"
+            params.append(note_message)
+
+        query += " ORDER BY ds.Dokumenteret DESC"
+        params = tuple(params)
+
+        return self._execute_query(query, params)
