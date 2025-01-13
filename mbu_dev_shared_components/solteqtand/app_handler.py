@@ -1,5 +1,7 @@
 """
-This module contains the `SolteqTandApp` class, which automates interactions with the SolteqTand application using the UIAutomation library.
+This module contains the SolteqTandApp class, which
+automates interactions with the SolteqTand application
+using the UIAutomation library.
 """
 import os
 import time

@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=65.0", "setuptools-scm"]
+requires = ["setuptools>=65.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "mbu_dev_shared_components"
-dynamic = ["version"]
+version = "0.1.0"  # Specify the version manually here
 authors = [
   { name="MBU", email="rpa@mbu.aarhus.dk" },
 ]
@@ -25,7 +25,3 @@ dependencies = [
   "office365-rest-python-client",
   "uiautomation",
 ]
-
-[tool.setuptools_scm]
-version_scheme = "post-release"
-local_scheme = "dirty-tag"
