@@ -151,7 +151,7 @@ class SolteqTandDatabase:
             JOIN BOOKINGTYPE bt on bt.BookingTypeID = b.BookingTypeID
             WHERE p.cpr = ?
         """
-        return self._execute_query(query, (self.ssn))
+        return self._execute_query(query, (self.ssn,))
 
     def check_if_event_exists(self, event_name: str, event_message: str):
         """
@@ -203,7 +203,7 @@ class SolteqTandDatabase:
             JOIN [CLINIC] c ON c.clinicId = p.preferredDentalClinicId
             WHERE p.cpr = ?
         """
-        return self._execute_query(query, (self.ssn))
+        return self._execute_query(query, (self.ssn,))
 
     def get_journal_notes(self, note_message: str = None):
         """
