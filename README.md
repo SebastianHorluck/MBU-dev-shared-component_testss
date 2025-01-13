@@ -2,7 +2,7 @@
 
 ## Installation
 
-```
+```bash
 pip install mbu-dev-shared-components
 ```
 
@@ -47,6 +47,14 @@ The InvoiceCreator class offers methods to open a specified business partner, an
 - Open business partner
 - Create invoice
 
+
+### Solteq Tand
+#### - Application
+#### - Database
+
+This module provides the SolteqTandApp and SolteqTandDatabase class to handle patients data in Solteq Tand.
+
+
 ### Utils
 #### - JSON
 This module provides a class for manipulating JSON objects by transforming lists
@@ -65,5 +73,3 @@ Fernet symmetric encryption algorithm.
 
 - Encrypts
 - Decrypts
-
-
