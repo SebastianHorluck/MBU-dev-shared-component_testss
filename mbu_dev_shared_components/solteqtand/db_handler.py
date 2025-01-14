@@ -153,7 +153,7 @@ class SolteqTandDatabase:
         """
         return self._execute_query(query, (self.ssn,))
 
-    def check_if_event_exists(self, event_name: str, event_message: str):
+    def check_if_event_exists(self, event_name: str, event_message: str, is_archived: int = None):
         """
         Checks if a specific event exists for the patient based on the event name and message.
 
@@ -174,7 +174,8 @@ class SolteqTandDatabase:
                     c.name,
                     e.[entityId],
                     e.[eventTriggerDate],
-                    p.cpr
+                    p.cpr,
+                    e.archived
             FROM [EVENT] e
             JOIN [PATIENT] p ON p.patientId = e.entityId
             JOIN [CLINIC] c ON c.clinicId = e.clinicId
@@ -182,7 +183,13 @@ class SolteqTandDatabase:
             AND c.name = ?
             AND e.currentStateText = ?
         """
-        return self._execute_query(query, (self.ssn, event_name, event_message))
+        params = [self.ssn, event_name, event_message]
+
+        if is_archived is not None:
+            query += " AND e.archived = ?"
+            params.append(is_archived)
+
+        return self._execute_query(query, (params))
 
     def get_primary_dental_clinic(self):
         """
