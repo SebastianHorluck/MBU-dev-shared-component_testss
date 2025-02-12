@@ -8,50 +8,112 @@ import pyodbc
 class SolteqTandDatabase:
     """Handles database operations related to the Solteq Tand system."""
 
-    def __init__(self, conn_str: str, ssn: str):
+    def __init__(self, conn_str: str):
         """
         Initializes the SolteqTandDatabase instance.
 
         Args:
             conn_str (str): Connection string to the Solteq Tand database.
-            ssn (str): Social Security Number (CPR) for identifying the patient.
         """
         self.connection_string = conn_str
-        self.ssn = ssn
 
     def _execute_query(self, query: str, params: tuple):
         """
-        Executes a query with the provided parameters and returns the result.
+        Executes a SQL query with parameters and returns the results as a list of dictionaries.
 
         Args:
-            query (str): SQL query to execute.
-            params (tuple): Parameters to include in the SQL query.
+            query (str): The SQL query to execute.
+            params (tuple): The parameters for the SQL query.
 
         Returns:
-            list: A list of rows returned by the query, where each row is a dictionary.
+            list: A list of dictionaries, where each dictionary represents a row from the query result.
         """
         conn = pyodbc.connect(self.connection_string)
         cursor = conn.cursor()
         cursor.execute(query, params)
         rows = cursor.fetchall()
         columns = [column[0] for column in cursor.description]
-        result = {'data': dict(zip(columns, row)) for row in rows}
+
+        result = [dict(zip(columns, row)) for row in rows]
+
         return result
 
-    def check_if_document_exists(self, filename: str, documenttype: str = None, form_id: str = None):
+    def _construct_sql_statement(self, base_query, filters=None, or_filters=None):  # noqa
         """
-        Checks if a document with the given filename exists for the specified patient,
-        optionally filtering by document type and form ID.
+        Dynamically constructs a SQL query by applying filters.
 
         Args:
-            filename (str): Name of the file to search for.
-            documenttype (str, optional): Type of the document to filter by.
-            form_id (str, optional): Form ID to filter by.
+            base_query (str): The base SQL query with a WHERE clause.
+            filters (dict, optional): Key-value pairs for AND conditions.
+            or_filters (list of dict, optional): List of OR condition dictionaries.
 
         Returns:
-            list: A list of matching document records.
+            tuple: The final SQL query and the corresponding parameters.
         """
-        query = """
+        params = []
+        where_clauses = []
+
+        # Handling AND filters
+        if filters:
+            for key, value in filters.items():
+                if isinstance(value, tuple) and len(value) == 2:  # BETWEEN filtering
+                    where_clauses.append(f"{key} BETWEEN ? AND ?")
+                    params.extend(value)
+                elif isinstance(value, list):  # IN filtering
+                    placeholders = ", ".join("?" for _ in value)
+                    where_clauses.append(f"{key} IN ({placeholders})")
+                    params.extend(value)
+                elif isinstance(value, str) and "%" in value:  # LIKE filtering
+                    where_clauses.append(f"{key} LIKE ?")
+                    params.append(value)
+                else:  # Default equality filtering
+                    where_clauses.append(f"{key} = ?")
+                    params.append(value)
+
+        # Handling OR filters
+        or_clauses = []
+        if or_filters:
+            for or_filter in or_filters:
+                sub_clauses = []
+                sub_params = []
+                for key, value in or_filter.items():
+                    if isinstance(value, list):
+                        placeholders = ", ".join("?" for _ in value)
+                        sub_clauses.append(f"{key} IN ({placeholders})")
+                        sub_params.extend(value)
+                    elif isinstance(value, str) and "%" in value:
+                        sub_clauses.append(f"{key} LIKE ?")
+                        sub_params.append(value)
+                    else:
+                        sub_clauses.append(f"{key} = ?")
+                        sub_params.append(value)
+
+                if sub_clauses:
+                    or_clauses.append(f"({' OR '.join(sub_clauses)})")
+                    params.extend(sub_params)
+
+        # Adding AND filters
+        if where_clauses:
+            base_query += " AND " + " AND ".join(where_clauses)
+
+        # Adding OR filters
+        if or_clauses:
+            base_query += " AND (" + " OR ".join(or_clauses) + ")"
+
+        return base_query, params
+
+    def get_list_of_documents(self, filters=None, or_filters=None):
+        """
+        Retrieves a list of documents based on the specified filters.
+
+        Args:
+            filters (dict, optional): Filtering criteria for document retrieval.
+            or_filters (list of dict, optional): OR conditions for filtering.
+
+        Returns:
+            list: A list of document records matching the criteria.
+        """
+        base_query = """
             WITH LatestActiveDocuments AS (
                 SELECT
                     ds.DocumentId,
@@ -87,32 +149,23 @@ class SolteqTandDatabase:
                 p.cpr
             FROM [tmtdata_prod].[dbo].[PATIENT] p
             JOIN LatestActiveDocuments ds ON ds.entityId = p.patientId
-            WHERE ds.rn = 1
-                AND ds.DocumentStoreStatusId = 1
-                AND p.cpr = ?
-                AND ds.OriginalFilename = ?
+            WHERE 1=1
         """
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        return self._execute_query(final_query, params)
 
-        params = [self.ssn, filename]
-
-        if documenttype:
-            query += " AND ds.DocumentType = ?"
-            params.append(documenttype)
-
-        if form_id:
-            query += " AND ds.DocumentDescription = ?"
-            params.append(form_id)
-
-        params = tuple(params)
-
-        return self._execute_query(query, params)
-
-    def check_extern_dentist(self):
+    def get_list_of_extern_dentist(self, filters=None, or_filters=None):
         """
-        Checks if the patient is associated with an external dentist.
-        (This method is a placeholder and needs to be implemented based on specific requirements.)
+        Retrieves a list of external dentists associated with the patient.
+
+        Args:
+            filters (dict, optional): Filtering criteria for external dentists.
+            or_filters (list of dict, optional): OR conditions for filtering.
+
+        Returns:
+            list: A list of external dentist records.
         """
-        query = """
+        base_query = """
             SELECT	[patientId]
                     ,[cpr]
                     ,[privateClinicId]
@@ -124,18 +177,23 @@ class SolteqTandDatabase:
                     ,[c.phoneNumber]
             FROM	[tmtdata_prod].[dbo].[PATIENT] p
             JOIN	[CLINIC] c on c.clinicId = p.privateClinicId
-            WHERE	cpr = ?
+            WHERE	1=1
         """
-        return self._execute_query(query, (self.ssn))
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        return self._execute_query(final_query, params)
 
-    def check_if_booking_exists(self):
+    def get_list_of_bookings(self, filters=None, or_filters=None):
         """
-        Checks if any booking exists for the specified patient.
+        Retrieves a list of bookings for the specified patient.
+
+        Args:
+            filters (dict, optional): Filtering criteria for booking retrieval.
+            or_filters (list of dict, optional): OR conditions for filtering.
 
         Returns:
-            list: A list of booking records for the patient.
+            list: A list of booking records.
         """
-        query = """
+        base_query = """
             SELECT  b.StartTime,
                     b.EndTime,
                     b.PatientNotified,
@@ -149,22 +207,23 @@ class SolteqTandDatabase:
             FROM [tmtdata_prod].[dbo].[BOOKING] b
             JOIN PATIENT p on p.patientId = b.patientId
             JOIN BOOKINGTYPE bt on bt.BookingTypeID = b.BookingTypeID
-            WHERE p.cpr = ?
+            WHERE	1=1
         """
-        return self._execute_query(query, (self.ssn,))
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        return self._execute_query(final_query, params)
 
-    def check_if_event_exists(self, event_name: str, event_message: str, is_archived: int = None):
+    def get_list_of_events(self, filters=None, or_filters=None):
         """
-        Checks if a specific event exists for the patient based on the event name and message.
+        Retrieves a list of events related to the patient.
 
         Args:
-            event_name (str): The name of the event (clinic name).
-            event_message (str): The event message or state.
+            filters (dict, optional): Filtering criteria for event retrieval.
+            or_filters (list of dict, optional): OR conditions for filtering.
 
         Returns:
-            list: A list of matching event records for the patient.
+            list: A list of event records matching the criteria.
         """
-        query = """
+        base_query = """
             SELECT  e.[eventId],
                     e.[type],
                     e.[currentStateText],
@@ -179,26 +238,23 @@ class SolteqTandDatabase:
             FROM [EVENT] e
             JOIN [PATIENT] p ON p.patientId = e.entityId
             JOIN [CLINIC] c ON c.clinicId = e.clinicId
-            WHERE p.cpr = ?
-            AND c.name = ?
-            AND e.currentStateText = ?
+            WHERE	1=1
         """
-        params = [self.ssn, event_name, event_message]
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        return self._execute_query(final_query, params)
 
-        if is_archived is not None:
-            query += " AND e.archived = ?"
-            params.append(is_archived)
-
-        return self._execute_query(query, (params))
-
-    def get_primary_dental_clinic(self):
+    def get_list_of_primary_dental_clinics(self, filters=None, or_filters=None):
         """
-        Fetches the primary dental clinic details for the specified patient.
+        Retrieves details of the primary dental clinics associated with the patient.
+
+        Args:
+            filters (dict, optional): Filtering criteria for clinic retrieval.
+            or_filters (list of dict, optional): OR conditions for filtering.
 
         Returns:
-            dict: A dictionary containing patient and clinic details.
+            list: A list of primary dental clinic details.
         """
-        query = """
+        base_query = """
             SELECT  p.cpr,
                     p.patientId,
                     p.firstName,
@@ -208,18 +264,23 @@ class SolteqTandDatabase:
                     c.name AS preferredDentalClinicName
             FROM [tmtdata_prod].[dbo].[PATIENT] p
             JOIN [CLINIC] c ON c.clinicId = p.preferredDentalClinicId
-            WHERE p.cpr = ?
+            WHERE	1=1
         """
-        return self._execute_query(query, (self.ssn,))
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        return self._execute_query(final_query, params)
 
-    def get_journal_notes(self, note_message: str = None):
+    def get_list_of_journal_notes(self, filters=None, or_filters=None):
         """
-        Fetches the journal notes for the specified patient.
+        Retrieves journal notes associated with the specified patient.
+
+        Args:
+            filters (dict, optional): Filtering criteria for journal note retrieval.
+            or_filters (list of dict, optional): OR conditions for filtering.
 
         Returns:
-            dict: A dictionary containing the journal notes.
+            list: A list of journal notes matching the criteria.
         """
-        query = """
+        base_query = """
             SELECT
                 dn.Beskrivelse,
                 ds.Dokumenteret,
@@ -236,16 +297,7 @@ class SolteqTandDatabase:
                 DiagnostikNotat dn ON dn.KontekstID = ds.KontekstID
             JOIN
                 PATIENT p ON p.patientId = f.patientId
-            WHERE
-                p.cpr = ?
+            WHERE	1=1
         """
-        params = [self.ssn]
-
-        if note_message:
-            query += " AND dn.Beskrivelse = ?"
-            params.append(note_message)
-
-        query += " ORDER BY ds.Dokumenteret DESC"
-        params = tuple(params)
-
-        return self._execute_query(query, params)
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        return self._execute_query(final_query, params)
