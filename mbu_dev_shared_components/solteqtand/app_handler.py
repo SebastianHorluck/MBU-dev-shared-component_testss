@@ -413,6 +413,127 @@ class SolteqTandApp:
         save_button.SetFocus()
         save_button.Click(simulateMove=False, waitTime=0)
 
+    def get_list_of_appointments(self) -> dict: 
+        """
+        Gets list of appointments as found in patient window
+
+        Returns
+            booking_list_dict (dict): Dictionary with appointments and informations
+            booking_list_ctrls (list): List with the control related to each appointment
+
+        Todo: Assure that view is on patient
+        """
+        # Open "Stamkort"
+        self.open_tab("Stamkort")
+
+        # Read elements in list and check that expected element exists
+        # First get the list of appointments
+        list_parent = self.find_element_by_property(
+            control=self.app_window,
+            automation_id='ControlBookingDay'
+        )
+        booking_list_ctrl = self.find_element_by_property(
+            control=list_parent,
+            control_type=50008
+        )
+        # Initiate dictionary for list elements
+        booking_list = {'controls': []}
+        # Initiate list to hold headers
+        booking_list_keys = []
+        rowcount = 0
+
+        # Check for header
+        if booking_list_ctrl.GetFirstChildControl().ControlType == 50034:
+            # Loop through all elements in list
+            for elem in booking_list_ctrl.GetChildren():
+                # If header, then add each item to list of headers
+                if elem.ControlType == 50034:
+                    for colname in elem.GetChildren():
+                        booking_list_keys.append(colname.Name)
+                        booking_list[colname.Name] = []
+                # If listitem, then add each item to dict
+                if elem.ControlType == 50007:
+                    booking_list['controls'].append(elem)  # Adds the control to accessed later
+                    vals = elem.GetChildren()  # Extracts all information from control
+
+                    for headercount, val in enumerate(vals):
+                        booking_list[booking_list_keys[headercount]].append(val.Name)
+                    rowcount += 1
+
+        return booking_list
+    
+    def change_appointment_status(
+            self,
+            appointment_control: auto.ControlType,
+            set_status: str,
+            send_msg: bool = False
+        ):
+        """
+        Changes status of appointment and optionally sends message
+
+        Args:
+            appointment_control (Control): Control element that identifies the appointment to be changed
+            set_status (str): The status which the appointment should be changed to.
+            send_msg (bool, optional): Indicates whether message should be sent when status is changed.
+        """
+        import time
+        appointment_control.GetInvokePattern().Invoke()
+
+        # Find booking control
+        booking_control = self.wait_for_control(
+            control_type=auto.PaneControl,
+            search_params={
+                'AutomationId': 'ManageBookingControl'
+            },
+            search_depth=3
+        )
+
+        # Find appointment status dropdown
+        status_control = self.find_element_by_property(
+            control=booking_control,
+            control_type=50003,
+            name='Status'
+        )
+
+        # Open dropdown
+        self.find_element_by_property(
+            control=status_control,
+            control_type=50000
+        ).GetInvokePattern().Invoke()
+        
+        # Get list control for all status options
+        status_list_ctrl = self.wait_for_control(
+            control_type=auto.ListControl,
+            search_params={
+                'ClassName': 'ComboLBox'
+            }
+        )
+
+        # Load status options into dict with controls, names and lowercase names
+        status_dict = {
+            'ctrls' : [elem for elem in status_list_ctrl.GetChildren() if elem.ControlType == 50007],
+            'names' : [elem.Name for elem in status_list_ctrl.GetChildren() if elem.ControlType == 50007],
+            'names_lo': [elem.Name.lower() for elem in status_list_ctrl.GetChildren() if elem.ControlType == 50007]
+        }
+
+        # Set new status if valid, otherwise return error
+        if set_status.lower() in status_dict['names_lo']:
+            list_no = status_dict['names_lo'].index(set_status.lower())
+            status_dict['ctrls'][list_no].GetInvokePattern().Invoke()
+            # Click "Gem og udsend"
+            #   If warning when sending: press "ret manuelt" -> "annuler" -> return warning error 
+
+            return None
+        else:
+            print(f"{set_status} not in list. Possible status choices are: {', '.join(status_dict['names'])}")
+            return None
+
+
+        # status_list = self.wait_for_control(
+        #     control_type=auto.ListControl,
+        # )
+
+
     def close_patient_window(self):
         """
         Closes the current patient's window and ensures the application returns to the main window.
