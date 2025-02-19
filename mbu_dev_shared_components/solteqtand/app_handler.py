@@ -15,6 +15,20 @@ class ManualProcessingRequiredError(Exception):
     def __init__(self, message="Error occurred while opening the patient. There is no patient with the provided CPR number."):
         super().__init__(message)
 
+class NotMatchingError(Exception):
+    """
+    Custom exception raised when inputted SSN does not match found SSN.
+    """
+    def __init__(self, in_msg=""):
+        message = "Error occured while opening the patient. " + in_msg 
+        super().__init__(message)
+        
+class PatientNotFoundError(Exception):
+    """
+    Custom exception raised when inputted SSN does not match any patient in registry.
+    """
+    def __init__(self, message = "Error occured while opening the patient. Patient not found"):
+        super().__init__(message)
 
 class SolteqTandApp:
     """
@@ -190,7 +204,16 @@ class SolteqTandApp:
         search_button.SetFocus()
         search_button.SendKeys('{ENTER}')
 
-        try:
+        # Here we handle possible error window popup.
+        try: 
+            patient_window = self.wait_for_control(
+            auto.WindowControl,
+            {'AutomationId': 'FormPatient'},
+            timeout=5
+            )
+            self.app_window = patient_window
+            
+        except TimeoutError:
             error_window = self.wait_for_control(
                 auto.WindowControl,
                 {'Name': 'TMT - Åbn patient'},
@@ -203,16 +226,16 @@ class SolteqTandApp:
                 error_window_button.SetFocus()
                 error_window_button.Click(simulateMove=False, waitTime=0)
 
-                raise ManualProcessingRequiredError
+                raise PatientNotFoundError
 
-        except TimeoutError:
-            pass
 
         self.app_window = self.wait_for_control(
             auto.WindowControl,
             {'AutomationId': 'FormPatient'},
             timeout=10
         )
+
+        self.check_matching_ssn(ssn=ssn)
 
         self.app_window.Maximize()
 
@@ -244,6 +267,8 @@ class SolteqTandApp:
                 tab_name_modified = "F&ritvalg"
             case "Journal":
                 tab_name_modified = "&Journal"
+            case _:
+                tab_name_modified = tab_name
 
         tab_button = self.find_element_by_property(
             control=self.app_window,
@@ -255,6 +280,33 @@ class SolteqTandApp:
         if not is_tab_selected:
             tab_button.SetFocus()
             tab_button.SendKeys('{ENTER}')
+
+    def get_ssn_stamkort(self):
+        self.open_tab("Stamkort")
+        stamkort = self.wait_for_control(
+            auto.PaneControl,
+            search_params={
+                'AutomationId': 'TabPageRecord'
+            },
+            search_depth=3
+        )
+        ssn = self.find_element_by_property(
+            control=stamkort,
+            control_type=50004,
+            automation_id='TextPatientCprNumber'
+        )
+        ssn = ssn.GetValuePattern().Value
+        return ssn
+
+    def check_matching_ssn(self, ssn):
+        # Navigate to stamkort
+        found_ssn = self.get_ssn_stamkort()
+        found_ssn = found_ssn.replace("-","")
+        if found_ssn != ssn:
+            raise NotMatchingError(in_msg=f"Found SSN {found_ssn} does not match input {ssn}")
+        else:
+            return True
+
 
     def create_document(self, document_full_path: str = None, document_type: str = None, document_description: str = None):
         """
@@ -413,6 +465,58 @@ class SolteqTandApp:
         save_button.SetFocus()
         save_button.Click(simulateMove=False, waitTime=0)
 
+    def set_extra_recipients(self, more_recepients: bool) -> None:
+        """Set state of extra recipients. E.g. if patient is above 18
+        
+        Args:
+            more_recipients (bool): Whether there should be more recipients. 
+        
+        """
+        self.open_tab("Stamkort")
+        stamkort = self.wait_for_control(
+            auto.PaneControl,
+            search_params={
+                'AutomationId': 'TabPageRecord'
+            },
+            search_depth=3
+        )
+        msg_settings = self.find_element_by_property(
+            control=stamkort,
+            control_type=50033,
+            automation_id='ButtonNemSMSSettings'
+        )
+        msg_settings.SendKeys('{ENTER}')
+        settings_window = self.wait_for_control(
+            control_type=auto.PaneControl,
+            search_params={
+                "AutomationId": "MessageSettingsControl"
+
+            },
+            search_depth=4
+        )
+        self.app_window = settings_window
+        checkbox = self.find_element_by_property(
+            control=settings_window,
+            control_type=50002,
+            automation_id="chkMoreRecipients"
+        )
+        # checkbox = self.wait_for_control(
+        #     control_type=auto.CheckBoxControl,
+        #     search_params={
+        #         "AutomationId": "chkMoreRecipients"
+        #     },
+        #     search_depth=5
+        # )
+        if checkbox.GetTogglePattern().ToggleState != more_recepients:
+            checkbox.GetTogglePattern().Toggle()
+
+        ok_button = self.find_element_by_property(
+            control=settings_window,
+            control_type=50033,
+            automation_id="btnOk"
+        )
+        ok_button.SendKeys('{ENTER}')
+
     def get_list_of_appointments(self) -> dict: 
         """
         Gets list of appointments as found in patient window
@@ -476,7 +580,6 @@ class SolteqTandApp:
             set_status (str): The status which the appointment should be changed to.
             send_msg (bool, optional): Indicates whether message should be sent when status is changed.
         """
-        import time
         appointment_control.GetInvokePattern().Invoke()
 
         # Find booking control
@@ -494,6 +597,8 @@ class SolteqTandApp:
             control_type=50003,
             name='Status'
         )
+        # Get current status to reset if warning on save
+        current_status = status_control.GetValuePattern().Value
 
         # Open dropdown
         self.find_element_by_property(
@@ -508,7 +613,6 @@ class SolteqTandApp:
                 'ClassName': 'ComboLBox'
             }
         )
-
         # Load status options into dict with controls, names and lowercase names
         status_dict = {
             'ctrls' : [elem for elem in status_list_ctrl.GetChildren() if elem.ControlType == 50007],
@@ -521,19 +625,98 @@ class SolteqTandApp:
             list_no = status_dict['names_lo'].index(set_status.lower())
             status_dict['ctrls'][list_no].GetInvokePattern().Invoke()
             # Click "Gem og udsend"
+            self.app_window = booking_control
+            if send_msg:
+                save_button = self.find_element_by_property(
+                    control=booking_control,
+                    automation_id = "ButtonSavePrint"
+                )
+            else:
+                save_button = self.find_element_by_property(
+                    control=booking_control,
+                    automation_id = "ButtonOk"
+                )
+            save_button.SendKeys('{ENTER}')
+            # Check for warning window pop up
+            try:
+                self.handle_error_on_booking_save(slct_button="ButtonChangeManual")
+                # Wait for status list to reappear
+                booking_control = self.wait_for_control(
+                    control_type=auto.PaneControl,
+                    search_params={
+                        'AutomationId': 'ManageBookingControl'
+                    },
+                    search_depth=3
+                )
+                # Open dropdown
+                self.find_element_by_property(
+                    control=status_control,
+                    control_type=50000
+                ).GetInvokePattern().Invoke()
+                # Reset to original value
+                list_no = status_dict['names_lo'].index(current_status.lower())
+                status_dict['ctrls'][list_no].GetInvokePattern().Invoke()
+                # Save original status
+                save_button = self.find_element_by_property(
+                    control=booking_control,
+                    automation_id = "ButtonOk"
+                )
+                save_button.SendKeys('{ENTER}')
+                # Accept despite warning
+                self.handle_error_on_booking_save(slct_button="ButtonOk")
+               
+                raise ManualProcessingRequiredError
+            except TimeoutError:
+                pass
+            # Check for notification window pop up
+            try:
+                notification_ctrl = self.wait_for_control(
+                    control_type=auto.PaneControl,
+                    search_params={
+                        'AutomationId': 'BookingNotificationsControl'
+                    },
+                    search_depth=3,
+                    timeout=5
+                )
+                close_button = self.find_element_by_property(
+                    control=notification_ctrl,
+                    automation_id="ButtonCancel"
+                )
+                close_button.SendKeys('{ENTER}')
+            except TimeoutError:
+                pass
+            
             #   If warning when sending: press "ret manuelt" -> "annuler" -> return warning error 
 
             return None
         else:
             print(f"{set_status} not in list. Possible status choices are: {', '.join(status_dict['names'])}")
-            return None
+            raise Exception
 
-
-        # status_list = self.wait_for_control(
-        #     control_type=auto.ListControl,
-        # )
-
-
+    def handle_error_on_booking_save(self, slct_button: str):
+        """Handle error window when saving booking. Select button to press"""
+        buttons = [
+            "ButtonFindNewTimeSlot",
+            "ButtonOk",
+            "ButtonChangeManual"
+        ]
+        if slct_button not in buttons:
+            print(f"{slct_button} not in buttons. Available buttons are {' '.join(buttons)}")
+            raise ValueError
+        warning_window = self.wait_for_control(
+            control_type=auto.WindowControl,
+            search_params={
+                "AutomationId": "FormBookingWarnings"
+            },
+            search_depth=5
+        )
+        button = self.find_element_by_property(
+            control=warning_window,
+            control_type=50033,
+            automation_id=slct_button
+        )
+        button.SendKeys("{ENTER}")
+    
     def close_patient_window(self):
         """
         Closes the current patient's window and ensures the application returns to the main window.
@@ -557,6 +740,21 @@ class SolteqTandApp:
             search_depth=2,
             timeout=5
         )
+
+    def open_from_main_menu(self, menu_item: str) -> None:
+        """
+        Opens menu item from Solteq main menu"""
+
+        # Find hyperlink
+        menu_link = self.wait_for_control(
+            control_type=auto.HyperlinkControl,
+            search_params={
+                'Name': menu_item
+            },
+            search_depth=4
+        )
+
+        menu_link.GetInvokePattern().Invoke()
 
     def close_solteq_tand(self):
         """
