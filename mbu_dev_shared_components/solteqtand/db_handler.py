@@ -5,6 +5,8 @@ an interface to interact with the Solteq Tand database.
 import pyodbc
 
 
+HUSK ORDER BY!!!!!
+
 class SolteqTandDatabase:
     """Handles database operations related to the Solteq Tand system."""
 
@@ -166,15 +168,15 @@ class SolteqTandDatabase:
             list: A list of external dentist records.
         """
         base_query = """
-            SELECT	[patientId]
-                    ,[cpr]
-                    ,[privateClinicId]
-                    ,[c.contractorId]
-                    ,[c.isPrimary]
-                    ,[c.name]
-                    ,[c.streetAddress]
-                    ,[c.zip]
-                    ,[c.phoneNumber]
+            SELECT	p.[patientId]
+                    ,p.[cpr]
+                    ,p.[privateClinicId]
+                    ,c.[contractorId]
+                    ,c.[isPrimary]
+                    ,c.[name]
+                    ,c.[streetAddress]
+                    ,c.[zip]
+                    ,c.[phoneNumber]
             FROM	[tmtdata_prod].[dbo].[PATIENT] p
             JOIN	[CLINIC] c on c.clinicId = p.privateClinicId
             WHERE	1=1
