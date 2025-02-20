@@ -5,8 +5,6 @@ an interface to interact with the Solteq Tand database.
 import pyodbc
 
 
-HUSK ORDER BY!!!!!
-
 class SolteqTandDatabase:
     """Handles database operations related to the Solteq Tand system."""
 
@@ -40,7 +38,7 @@ class SolteqTandDatabase:
 
         return result
 
-    def _construct_sql_statement(self, base_query, filters=None, or_filters=None):  # noqa
+    def _construct_sql_statement(self, base_query, filters=None, or_filters=None, order_by=None, order_direction="ASC"):  # noqa
         """
         Dynamically constructs a SQL query by applying filters.
 
@@ -101,6 +99,11 @@ class SolteqTandDatabase:
         # Adding OR filters
         if or_clauses:
             base_query += " AND (" + " OR ".join(or_clauses) + ")"
+
+        # Adding ORDER BY clause
+        if order_by:
+            order_direction = "ASC" if order_direction.upper() not in ["ASC", "DESC"] else order_direction.upper()
+            base_query += f" ORDER BY {order_by} {order_direction}"
 
         return base_query, params
 
