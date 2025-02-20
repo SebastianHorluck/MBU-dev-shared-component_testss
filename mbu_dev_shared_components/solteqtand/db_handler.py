@@ -107,7 +107,7 @@ class SolteqTandDatabase:
 
         return base_query, params
 
-    def get_list_of_documents(self, filters=None, or_filters=None):
+    def get_list_of_documents(self, filters=None, or_filters=None, order_by=None, order_direction="ASC"):
         """
         Retrieves a list of documents based on the specified filters.
 
@@ -156,10 +156,10 @@ class SolteqTandDatabase:
             JOIN LatestActiveDocuments ds ON ds.entityId = p.patientId
             WHERE 1=1
         """
-        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters, order_by, order_direction)
         return self._execute_query(final_query, params)
 
-    def get_list_of_extern_dentist(self, filters=None, or_filters=None):
+    def get_list_of_extern_dentist(self, filters=None, or_filters=None, order_by=None, order_direction="ASC"):
         """
         Retrieves a list of external dentists associated with the patient.
 
@@ -184,10 +184,10 @@ class SolteqTandDatabase:
             JOIN	[CLINIC] c on c.clinicId = p.privateClinicId
             WHERE	1=1
         """
-        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters, order_by, order_direction)
         return self._execute_query(final_query, params)
 
-    def get_list_of_bookings(self, filters=None, or_filters=None):
+    def get_list_of_bookings(self, filters=None, or_filters=None, order_by=None, order_direction="ASC"):
         """
         Retrieves a list of bookings for the specified patient.
 
@@ -214,10 +214,10 @@ class SolteqTandDatabase:
             JOIN BOOKINGTYPE bt on bt.BookingTypeID = b.BookingTypeID
             WHERE	1=1
         """
-        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters, order_by, order_direction)
         return self._execute_query(final_query, params)
 
-    def get_list_of_events(self, filters=None, or_filters=None):
+    def get_list_of_events(self, filters=None, or_filters=None, order_by=None, order_direction="ASC"):
         """
         Retrieves a list of events related to the patient.
 
@@ -245,10 +245,10 @@ class SolteqTandDatabase:
             JOIN [CLINIC] c ON c.clinicId = e.clinicId
             WHERE	1=1
         """
-        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters, order_by, order_direction)
         return self._execute_query(final_query, params)
 
-    def get_list_of_primary_dental_clinics(self, filters=None, or_filters=None):
+    def get_list_of_primary_dental_clinics(self, filters=None, or_filters=None, order_by=None, order_direction="ASC"):
         """
         Retrieves details of the primary dental clinics associated with the patient.
 
@@ -271,10 +271,10 @@ class SolteqTandDatabase:
             JOIN [CLINIC] c ON c.clinicId = p.preferredDentalClinicId
             WHERE	1=1
         """
-        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters, order_by, order_direction)
         return self._execute_query(final_query, params)
 
-    def get_list_of_journal_notes(self, filters=None, or_filters=None):
+    def get_list_of_journal_notes(self, filters=None, or_filters=None, order_by=None, order_direction="ASC"):
         """
         Retrieves journal notes associated with the specified patient.
 
@@ -304,5 +304,33 @@ class SolteqTandDatabase:
                 PATIENT p ON p.patientId = f.patientId
             WHERE	1=1
         """
-        final_query, params = self._construct_sql_statement(base_query, filters, or_filters)
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters, order_by, order_direction)
+        return self._execute_query(final_query, params)
+
+    def get_list_of_clinict(self, filters=None, or_filters=None, order_by=None, order_direction="ASC"):
+        """
+        Retrieves a list of clinics.
+
+        Args:
+            filters (dict, optional): Filtering criteria for external dentists.
+            or_filters (list of dict, optional): OR conditions for filtering.
+
+        Returns:
+            list: A list of external dentist records.
+        """
+        base_query = """
+            SELECT
+                clinicId
+                ,name
+                ,type
+                ,streetAddress
+                ,countyCode
+                ,zip
+                ,phoneNumber
+                ,contractorId
+            FROM
+                [tmtdata_prod].[dbo].[CLINIC]
+            WHERE	1=1
+        """
+        final_query, params = self._construct_sql_statement(base_query, filters, or_filters, order_by, order_direction)
         return self._execute_query(final_query, params)
