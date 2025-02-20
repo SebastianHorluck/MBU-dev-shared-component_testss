@@ -307,7 +307,7 @@ class SolteqTandDatabase:
         final_query, params = self._construct_sql_statement(base_query, filters, or_filters, order_by, order_direction)
         return self._execute_query(final_query, params)
 
-    def get_list_of_clinict(self, filters=None, or_filters=None, order_by=None, order_direction="ASC"):
+    def get_list_of_clinics(self, filters=None, or_filters=None, order_by=None, order_direction="ASC"):
         """
         Retrieves a list of clinics.
 
