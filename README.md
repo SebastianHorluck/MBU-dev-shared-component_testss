@@ -56,5 +56,5 @@ This repository provides a **generic function** to dynamically build SQL `WHERE`
 | **11. ORDER BY (Ascending)** | ```python self.check_if_event_exists(filters={"p.cpr": "123456-7890"}, order_by="e.timestamp", order_direction="ASC") ``` | `WHERE 1=1 AND p.cpr = ? ORDER BY e.timestamp ASC` |
 | **12. ORDER BY (Descending)** | ```python self.check_if_event_exists(filters={"p.cpr": "123456-7890"}, order_by="e.timestamp", order_direction="DESC") ``` | `WHERE 1=1 AND p.cpr = ? ORDER BY e.timestamp DESC` |
 | **13. ORDER BY with Multiple Filters** | ```python self.check_if_event_exists(filters={"e.event_message": "Scheduled"}, order_by="e.eventTriggerDate", order_direction="DESC") ``` | `WHERE 1=1 AND e.event_message = ? ORDER BY e.eventTriggerDate DESC` |
-
----
+=======
+```
