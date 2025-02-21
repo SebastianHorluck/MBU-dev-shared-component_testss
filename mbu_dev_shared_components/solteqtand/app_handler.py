@@ -796,6 +796,8 @@ class SolteqTandApp:
         try:
             from_date.strftime(format="%d. %B %Y") == dt_picker_from.Name
         except:
+            # Should maybe try a number of times until it hits right or ends in systemerror
+            # End with raise error where resulting dates are printed
             print("Dates after insert not matching input")
             print((
                 f"'From' input: {from_date.strftime(format="%d. %B %Y")} " +
