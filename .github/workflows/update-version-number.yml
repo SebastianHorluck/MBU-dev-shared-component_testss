@@ -1,27 +1,40 @@
 name: Update version number
 
-on: 
-  pull_request:
-    branches:
-      - main
-      - test-build-by-action
-
+on:
+  push:
+    tags:
+      - '*'
 jobs:
-  update-version-number:
+  github-example-tags:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Update Version Number
-        run: |
-          OLD_VERSION=$(grep ^version pyproject.toml | cut -d '"' -f 2)
-          OLD_VERSION="\"$OLD_VERSION\""
-          echo  $OLD_VERSION
-          NEW_VERSION="\"$GITHUB_REF_NAME\""
-          echo $NEW_VERSION
-          sed -i "s+version = $OLD_VERSION+version = $NEW_VERSION+g" pyproject.toml
+     - name: GitHub Tag Name example
+       run: |
+         echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
+         echo "Tag name from github.ref_name: ${{  github.ref_name }}"
+
+# on: 
+#   pull_request:
+#     branches:
+#       - main
+#       - test-build-by-action
+
+# jobs:
+#   update-version-number:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
+#       - name: Update Version Number
+#         run: |
+#           OLD_VERSION=$(grep ^version pyproject.toml | cut -d '"' -f 2)
+#           OLD_VERSION="\"$OLD_VERSION\""
+#           echo  $OLD_VERSION
+#           NEW_VERSION="\"$GITHUB_REF_NAME\""
+#           echo $NEW_VERSION
+#           sed -i "s+version = $OLD_VERSION+version = $NEW_VERSION+g" pyproject.toml
       # - name: Commit Changes
       #   run: |
       #     git config user.name "$GITHUB_ACTOR"
