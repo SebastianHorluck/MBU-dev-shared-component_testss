@@ -1,9 +1,9 @@
 name: Update version number
 
 on:
-  push:
-    tags:
-      - '*'
+  pull_request:
+    # tags:
+    #   - '*'
 jobs:
   github-example-tags:
     runs-on: ubuntu-latest
