@@ -23,7 +23,7 @@ jobs:
 
       - name: Update pyproject.toml version with tag
         run: |
-          # Get the tag that triggered the push (e.g., v1.2.3)
+          # Get the tag that triggered the push
           VERSION_TAG="${GITHUB_REF#refs/tags/}"
           
           # Update pyproject.toml with the version tag
@@ -48,7 +48,7 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git add pyproject.toml
           git commit -m "Update pyproject.toml with version ${VERSION_TAG}"
-          git push
+          git push origin HEAD:${{ github.head_ref }}
           
 
       # - name: Get tag
