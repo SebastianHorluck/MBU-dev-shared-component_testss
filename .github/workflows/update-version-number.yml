@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
         uses: actions/checkout@v4
       - name: Update Version Number
         run: |
@@ -26,7 +29,7 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
           git commit -a -m "Update version number to new_version"
-          git push origin HEAD:${{ github.head_ref }}
+          git push
 
       # - name: Get tag
       #   run: |
