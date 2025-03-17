@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*.*.*'
+permissions: 
+  contents: write
+
 jobs:
   update-version-tag:
     runs-on: ubuntu-latest
@@ -44,12 +47,11 @@ jobs:
           
       - name: Commit and push changes
         run: |
-          echo ${{github.head_ref}}
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add pyproject.toml
           git commit -a -m "Update pyproject.toml with version ${VERSION_TAG}"
-          git push origin HEAD:${{ github.head_ref }}
+          git push
           
 
       # - name: Get tag
