@@ -49,7 +49,7 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git add pyproject.toml
           git commit -a -m "Update pyproject.toml with version ${VERSION_TAG}"
-          git push
+          git push origin HEAD:${{github.ref_name}}
           
 
       # - name: Get tag
