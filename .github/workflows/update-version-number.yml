@@ -13,44 +13,20 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
-
-      - name: Install toml library
-        run: pip install toml
-
-      - name: Update pyproject.toml version with tag
+      - name: Update Version Number
         run: |
-          # Get the tag that triggered the push
-          VERSION_TAG="${GITHUB_REF#refs/tags/}"
-          
-          # Update pyproject.toml with the version tag
-          python -c "
-          import toml
-
-          # Load pyproject.toml
-          with open('pyproject.toml', 'r') as f:
-              pyproject = toml.load(f)
-
-          # Update the version field
-          pyproject['project']['version'] = '${VERSION_TAG}'
-
-          # Save the modified pyproject.toml
-          with open('pyproject.toml', 'w') as f:
-              toml.dump(pyproject, f)
-          "
-          
-      - name: Commit and push changes
+          OLD_VERSION=$(grep ^version pyproject.toml | cut -d '"' -f 2)
+          OLD_VERSION="\"$OLD_VERSION\""
+          echo  $OLD_VERSION
+          NEW_VERSION="\"$GITHUB_REF_NAME\""
+          echo $NEW_VERSION
+          sed -i "s+version = $OLD_VERSION+version = $NEW_VERSION+g" pyproject.toml
+      - name: Commit Changes
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add pyproject.toml
-          git commit -a -m "Update pyproject.toml with version ${VERSION_TAG}"
-          git push origin HEAD:${{github.ref_name}}
-          
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git commit -a -m "Update version number to new_version"
+          git push origin HEAD:${{ github.head_ref }}
 
       # - name: Get tag
       #   run: |
