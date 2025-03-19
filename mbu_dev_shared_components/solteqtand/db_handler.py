@@ -151,6 +151,8 @@ class SolteqTandDatabase:
                 ds.DocumentCreatedDate,
                 ds.DocumentLastEditedDate,
                 ds.SentToNemSMS,
+                ds.rn,
+                ds.DocumentStoreStatusId,
                 p.cpr
             FROM [tmtdata_prod].[dbo].[PATIENT] p
             JOIN LatestActiveDocuments ds ON ds.entityId = p.patientId
