@@ -29,6 +29,7 @@ jobs:
 
     - name: Get branch associated with the tag
       run: |
+        echo $TAG
         # Get the commit hash associated with the tag
         COMMIT_HASH=$(git rev-list $TAG)
 
