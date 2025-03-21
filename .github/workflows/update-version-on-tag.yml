@@ -1,33 +1,48 @@
-name: Update version number
+name: Update pyproject on tag push
 
 on:
   push:
     tags:
-      - 'v*.*.*'
-permissions: 
-  contents: write
+      - '*'
 
 jobs:
-  update-version-tag:
+  update-pyproject:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repository
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-        uses: actions/checkout@v4
-      - name: Update Version Number
-        run: |
-          OLD_VERSION=$(grep ^version pyproject.toml | cut -d '"' -f 2)
-          OLD_VERSION="\"$OLD_VERSION\""
-          echo  $OLD_VERSION
-          NEW_VERSION="\"$GITHUB_REF_NAME\""
-          echo $NEW_VERSION
-          sed -i "s+version = $OLD_VERSION+version = $NEW_VERSION+g" pyproject.toml
-      - name: Commit Changes
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          git switch -c "update ver $GITHUB_REF_NAME"
-          git commit -a -m "Update version number to new_version"
-          git push
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Git
+      run: |
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
+
+    - name: Extract version from tag and update pyproject.toml
+      run: |
+        # Extract the tag (remove 'refs/tags/' prefix)
+        TAG=${GITHUB_REF#refs/tags/}
+
+        # Use sed to update the version in pyproject.toml
+        # Assumes you are using poetry and the version is in the 'tool.poetry.version' field
+        sed -i "s/^version = .*/version = \"$TAG\"/" pyproject.toml
+
+    - name: Get branch associated with the tag
+      run: |
+        # Get the commit hash associated with the tag
+        COMMIT_HASH=$(git rev-list -n 1 $TAG)
+
+        # Find the branch that contains the tag (assumes it's pushed to a branch with this commit)
+        BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | grep -v 'HEAD' | sed 's/origin\///' | head -n 1)
+
+        echo "Branch to push: $BRANCH_NAME"
+        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+    - name: Push changes to the same branch
+      run: |
+        git checkout $BRANCH_NAME
+        git add pyproject.toml
+        git commit -m "Update pyproject.toml version to $TAG"
+        git push origin $BRANCH_NAME
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
