@@ -39,7 +39,8 @@ jobs:
         echo "Latest Commit Hash: $COMMIT_HASH"
 
         # Find the branch that contains the tag (assumes it's pushed to a branch with this commit)
-        BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | grep -v 'HEAD' | sed 's/origin\///' | head -n 1)
+        # BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | grep -v 'HEAD' | sed 's/origin\///' | head -n 1)
+        BRANCH_NAME=$(git name-rev --name-only $COMMIT_HASH)
 
         echo "Branch to push: $BRANCH_NAME"
         echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
