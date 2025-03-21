@@ -19,20 +19,23 @@ jobs:
         git config --global user.email 'github-actions@github.com'
 
     - name: Extract version from tag and update pyproject.toml
+      id: get-tag
       run: |
         # Extract the tag (remove 'refs/tags/' prefix)
         TAG=${GITHUB_REF#refs/tags/}
-        echo $TAG
+        echo "CURRENT_TAG=$TAG" >> $GITHUB_OUTPUT
 
         # Use sed to update the version in pyproject.toml
         # Assumes you are using poetry and the version is in the 'tool.poetry.version' field
         sed -i "s/^version = .*/version = \"$TAG\"/" pyproject.toml
 
     - name: Get branch associated with the tag
+      env: 
+        CURRENT_TAG: ${{ steps.get-tag.outputs.CURRENT_TAG}}
       run: |
-        echo $TAG
+        echo $CURRENT_TAG
         # Get the commit hash associated with the tag
-        COMMIT_HASH=$(git rev-list $TAG)
+        COMMIT_HASH=$(git rev-list $CURRENT_TAG)
 
         # Find the branch that contains the tag (assumes it's pushed to a branch with this commit)
         BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | grep -v 'HEAD' | sed 's/origin\///' | head -n 1)
