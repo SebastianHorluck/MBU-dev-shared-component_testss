@@ -35,6 +35,7 @@ jobs:
       run: |
         echo $CURRENT_TAG
         # Get the commit hash associated with the tag
+        git log $CURRENT_TAG
         COMMIT_HASH=$(git rev-list -n 1 $CURRENT_TAG)
 
         # Find the branch that contains the tag (assumes it's pushed to a branch with this commit)
