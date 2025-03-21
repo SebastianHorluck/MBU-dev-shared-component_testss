@@ -22,6 +22,7 @@ jobs:
       run: |
         # Extract the tag (remove 'refs/tags/' prefix)
         TAG=${GITHUB_REF#refs/tags/}
+        echo $TAG
 
         # Use sed to update the version in pyproject.toml
         # Assumes you are using poetry and the version is in the 'tool.poetry.version' field
