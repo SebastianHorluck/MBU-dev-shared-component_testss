@@ -30,7 +30,7 @@ jobs:
     - name: Get branch associated with the tag
       run: |
         # Get the commit hash associated with the tag
-        COMMIT_HASH=$(git rev-list -n 1 $TAG)
+        COMMIT_HASH=$(git rev-list $TAG)
 
         # Find the branch that contains the tag (assumes it's pushed to a branch with this commit)
         BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | grep -v 'HEAD' | sed 's/origin\///' | head -n 1)
