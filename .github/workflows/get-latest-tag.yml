@@ -16,5 +16,6 @@ jobs:
       - name: Get latest tag
         run: |
           latest_tag=$(git describe --tags --abbrev=0)
+          echi $(git log)
           echo "Latest tag is: $latest_tag"
           echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
