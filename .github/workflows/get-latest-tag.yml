@@ -1,0 +1,20 @@
+name: Get Latest Tag
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  get-latest-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Get latest tag
+        run: |
+          latest_tag=$(git describe --tags --abbrev=0)
+          echo "Latest tag is: $latest_tag"
+          echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV

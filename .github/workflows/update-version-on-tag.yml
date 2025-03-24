@@ -1,57 +1,59 @@
-name: Update pyproject on tag push
+# name: Update pyproject on tag push
 
-on:
-  push:
-    tags:
-      - '*'
+# on:
+#   push:
+#     tags:
+#       - '*'
 
-# Cannot get the branch to push to.  
+# # Cannot get the branch to push to.  
 
-jobs:
-  update-pyproject:
-    runs-on: ubuntu-latest
+# jobs:
+#   update-pyproject:
+#     runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v3
 
-    - name: Set up Git
-      run: |
-        git config --global user.name 'github-actions'
-        git config --global user.email 'github-actions@github.com'
+#     - name: Set up Git
+#       run: |
+#         git config --global user.name 'github-actions'
+#         git config --global user.email 'github-actions@github.com'
 
-    - name: Extract version from tag and update pyproject.toml
-      id: get-tag
-      run: |
-        # Extract the tag (remove 'refs/tags/' prefix)
-        TAG=${GITHUB_REF#refs/tags/}
-        echo "CURRENT_TAG=$TAG" >> $GITHUB_OUTPUT
+#     - name: Extract version from tag
+#       id: get-tag
+#       run: |
+#         # Extract the tag (remove 'refs/tags/' prefix)
+#         TAG=${GITHUB_REF#refs/tags/}
+#         echo "CURRENT_TAG=$TAG" >> $GITHUB_OUTPUT
 
-        # Use sed to update the version in pyproject.toml
-        # Assumes you are using poetry and the version is in the 'tool.poetry.version' field
-        sed -i "s/^version = .*/version = \"$TAG\"/" pyproject.toml
+#     - name: Create breanch for changes
 
-    - name: Get branch associated with the tag
-      env: 
-        CURRENT_TAG: ${{ steps.get-tag.outputs.CURRENT_TAG}}
-      run: |
-        echo $CURRENT_TAG
-        # Get the commit hash associated with the tag
-        COMMIT_HASH=$(git log -n 1 --pretty=format:"%H")
-        echo "Latest Commit Hash: $COMMIT_HASH"
+#         # Use sed to update the version in pyproject.toml
+#         # Assumes you are using poetry and the version is in the 'tool.poetry.version' field
+#         sed -i "s/^version = .*/version = \"$TAG\"/" pyproject.toml
 
-        # Find the branch that contains the tag (assumes it's pushed to a branch with this commit)
-        # BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | grep -v 'HEAD' | sed 's/origin\///' | head -n 1)
-        BRANCH_NAME=$(git name-rev --name-only $COMMIT_HASH)
+#     - name: Get branch associated with the tag
+#       env: 
+#         CURRENT_TAG: ${{ steps.get-tag.outputs.CURRENT_TAG}}
+#       run: |
+#         echo $CURRENT_TAG
+#         # Get the commit hash associated with the tag
+#         COMMIT_HASH=$(git log -n 1 --pretty=format:"%H")
+#         echo "Latest Commit Hash: $COMMIT_HASH"
 
-        echo "Branch to push: $BRANCH_NAME"
-        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+#         # Find the branch that contains the tag (assumes it's pushed to a branch with this commit)
+#         # BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | grep -v 'HEAD' | sed 's/origin\///' | head -n 1)
+#         BRANCH_NAME=$(git name-rev --name-only $COMMIT_HASH)
 
-    - name: Push changes to the same branch
-      run: |
-        git checkout $BRANCH_NAME
-        git add pyproject.toml
-        git commit -m "Update pyproject.toml version to $TAG"
-        git push origin $BRANCH_NAME
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         echo "Branch to push: $BRANCH_NAME"
+#         echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+#     - name: Push changes to the same branch
+#       run: |
+#         git checkout $BRANCH_NAME
+#         git add pyproject.toml
+#         git commit -m "Update pyproject.toml version to $TAG"
+#         git push origin $BRANCH_NAME
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
