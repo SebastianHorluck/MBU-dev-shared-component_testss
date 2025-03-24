@@ -11,11 +11,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Get latest tag
         run: |
           latest_tag=$(git describe --tags --abbrev=0)
-          echi $(git log)
           echo "Latest tag is: $latest_tag"
           echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
