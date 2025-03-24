@@ -1,7 +1,7 @@
 name: Get Latest Tag
 
 on:
-  push:
+  pull_request:
 permissions: 
     contents: write
 
