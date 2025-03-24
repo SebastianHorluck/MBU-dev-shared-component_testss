@@ -1,4 +1,4 @@
-name: Get Latest Tag
+name: Update version based on tag
 
 on:
   pull_request:
@@ -30,3 +30,4 @@ jobs:
             git add *pyproject.toml
             git commit -m "Version updating" || exit 0
             git push
+
