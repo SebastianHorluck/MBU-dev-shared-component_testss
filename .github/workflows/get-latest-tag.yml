@@ -12,7 +12,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+        with:
+            fetch-depth: 0
       - name: Get latest tag
         run: |
           latest_tag=$(git describe --tags --abbrev=0)
