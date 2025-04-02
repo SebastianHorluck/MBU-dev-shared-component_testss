@@ -3,7 +3,7 @@ requires = ["setuptools>=65.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mbu_dev_shared_components"
+name = "mbu_dev_shared_test"
 version = "0.3.19"
 authors = [
   { name="MBU", email="rpa@mbu.aarhus.dk" },
