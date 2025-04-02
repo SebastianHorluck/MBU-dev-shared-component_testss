@@ -38,8 +38,8 @@ jobs:
         run: |
           if [ "$VERSION_MAIN" = "$VERSION_PR" ]; then
             echo "Version in pyproject.toml not updated. Please update."
-            echo "Version on main: $VERSION_MAIN"
-            echo "Version on PR: $VERSION_PR"
+          echo "Version on main: $VERSION_MAIN"
+          echo "Version on PR: $VERSION_PR"
             exit 1
           fi
           if [ "$(printf '%s\n' "$VERSION_MAIN" "$VERSION_PR" | sort -V | head -n1)" = "$VERSION_PR" ]; then
@@ -49,4 +49,6 @@ jobs:
             exit 1
           fi
           echo "Version numbers are different and PR version is not older. Check passed."
-
+          echo "Version on main: $VERSION_MAIN"
+          echo "Version on PR: $VERSION_PR"
+          
