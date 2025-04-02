@@ -42,7 +42,7 @@ jobs:
             echo "Version on PR: $VERSION_PR"
             exit 1
           fi
-          if [ "$(printf '%s\n' "$VERSION_MAIN" "$VERSION_PR" | sort -V | head -n1)" = "$VERSION_MAIN" ]; then
+          if [ "$(printf '%s\n' "$VERSION_MAIN" "$VERSION_PR" | sort -V | head -n1)" = "$VERSION_PR" ]; then
             echo "Version in PR is older than version in main. Failing the check."
             echo "Version on main: $VERSION_MAIN"
             echo "Version on PR: $VERSION_PR"
