@@ -10,21 +10,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 2 # We need to fetch at least two commits for comparison
 
       - name: Get version from main
         id: get_main_version
         run: |
-          git fetch origin main:main
-          git checkout main
           VERSION_MAIN=$(cat pyproject.toml | grep '^version =' | awk -F'"' '{print $2}')
           echo "VERSION_MAIN=$VERSION_MAIN" >> $GITHUB_ENV
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 2
 
       - name: Get version from PR
         id: get_pr_version
         run: |
-          git checkout ${{ github.event.pull_request.head.sha }}
           VERSION_PR=$(cat pyproject.toml | grep '^version =' | awk -F'"' '{print $2}')
           echo "VERSION_PR=$VERSION_PR" >> $GITHUB_ENV
 
@@ -38,3 +44,50 @@ jobs:
           else
             echo "Version number is updated from $VERSION_MAIN to $VERSION_PR.  Check passed."
           fi
+
+          name: Check Version Change
+
+# on:
+#   pull_request:
+#     paths:
+#       - "pyproject.toml"
+
+# jobs:
+#   compare-version:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#     - name: Checkout main branch
+#       uses: actions/checkout@v3
+#       with:
+#         ref: main
+#         fetch-depth: 2 # We need to fetch at least two commits for comparison
+
+#     - name: Get version from main branch pyproject.toml
+#       id: main_version
+#       run: |
+#         # Parse version from pyproject.toml in the main branch
+#         VERSION_MAIN=$(grep -oP '^version = "\K[0-9\.]+' pyproject.toml)
+#         echo "VERSION_MAIN=${VERSION_MAIN}" >> $GITHUB_ENV
+
+#     - name: Checkout PR branch
+#       uses: actions/checkout@v3
+#       with:
+#         ref: ${{ github.head_ref }}
+#         fetch-depth: 2
+
+#     - name: Get version from PR branch pyproject.toml
+#       id: pr_version
+#       run: |
+#         # Parse version from pyproject.toml in the PR branch
+#         VERSION_PR=$(grep -oP '^version = "\K[0-9\.]+' pyproject.toml)
+#         echo "VERSION_PR=${VERSION_PR}" >> $GITHUB_ENV
+
+#     - name: Compare versions and throw error if they are the same
+#       run: |
+#         if [ "${{ env.VERSION_MAIN }}" == "${{ env.VERSION_PR }}" ]; then
+#           echo "ERROR: The version in the pyproject.toml file on the main branch (${VERSION_MAIN}) is the same as the version in the PR branch (${VERSION_PR}). Please update the version.";
+#           exit 1;
+#         else
+#           echo "Version comparison passed. Main: ${VERSION_MAIN}, PR: ${VERSION_PR}";
+#         fi
