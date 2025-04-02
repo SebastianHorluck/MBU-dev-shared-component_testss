@@ -24,7 +24,7 @@ jobs:
       - name: Get version from PR
         id: get_pr_version
         run: |
-          git checkout ${{ github.event.pull_request.head.ref }}
+          git checkout ${{ github.event.pull_request.head.sha }}
           VERSION_PR=$(cat pyproject.toml | grep '^version =' | awk -F'"' '{print $2}')
           echo "VERSION_PR=$VERSION_PR" >> $GITHUB_ENV
 
