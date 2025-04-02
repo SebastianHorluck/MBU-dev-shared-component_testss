@@ -17,12 +17,14 @@ jobs:
         id: get_main_version
         run: |
           git fetch origin main:main
+          git checkout main
           VERSION_MAIN=$(cat pyproject.toml | grep '^version =' | awk -F'"' '{print $2}')
           echo "VERSION_MAIN=$VERSION_MAIN" >> $GITHUB_ENV
 
       - name: Get version from PR
         id: get_pr_version
         run: |
+          git checkout ${{ github.event.pull_request.head.ref }}
           VERSION_PR=$(cat pyproject.toml | grep '^version =' | awk -F'"' '{print $2}')
           echo "VERSION_PR=$VERSION_PR" >> $GITHUB_ENV
 
