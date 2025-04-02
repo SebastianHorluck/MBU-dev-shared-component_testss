@@ -37,10 +37,12 @@ jobs:
       - name: Compare versions
         run: |
           if [ "$VERSION_MAIN" = "$VERSION_PR" ]; then
-            echo "Version in pyproject.toml not updated. Please update."
-            echo "Version on main: $VERSION_MAIN"
-            echo "Version on PR: $VERSION_PR"
+            echo "Version numbers are the same. Failing the check."
             exit 1
-          else
-            echo "Version number is updated from $VERSION_MAIN to $VERSION_PR.  Check passed."
           fi
+          if [ "$(printf '%s\n' "$VERSION_MAIN" "$VERSION_PR" | sort -V | head -n1)" = "$VERSION_MAIN" ]; then
+            echo "Version in PR is older than version in main. Failing the check."
+            exit 1
+          fi
+          echo "Version numbers are different and PR version is not older. Check passed."
+
