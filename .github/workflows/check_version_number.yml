@@ -1,0 +1,38 @@
+name: Check Version Number
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Get version from main
+        id: get_main_version
+        run: |
+          git fetch origin main:main
+          VERSION_MAIN=$(cat pyproject.toml | grep '^version =' | awk -F'"' '{print $2}')
+          echo "VERSION_MAIN=$VERSION_MAIN" >> $GITHUB_ENV
+
+      - name: Get version from PR
+        id: get_pr_version
+        run: |
+          VERSION_PR=$(cat pyproject.toml | grep '^version =' | awk -F'"' '{print $2}')
+          echo "VERSION_PR=$VERSION_PR" >> $GITHUB_ENV
+
+      - name: Compare versions
+        run: |
+          if [ "$VERSION_MAIN" = "$VERSION_PR" ]; then
+            echo "Version in pyproject.toml not updated. Please update."
+            echo "Version on main: $VERSION_MAIN"
+            echo "Version on PR: $VERSION_PR"
+            exit 1
+          else
+            echo "Version number is updated from $VERSION_MAIN to $VERSION_PR.  Check passed."
+          fi
