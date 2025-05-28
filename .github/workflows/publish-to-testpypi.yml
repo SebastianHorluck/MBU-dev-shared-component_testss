@@ -55,12 +55,15 @@ jobs:
             repository-url: https://test.pypi.org/legacy/
 
     tag-new-version:
+        name: Tag new version
+        needs:
+        - publish-to-testpypi
         runs-on: ubuntu-latest
         steps:
           - name: Extract version from pyproject.toml
             id: get_version
             run: |
-              VERSION=$(grep -Po '(?<=^version = ")[^"]+' pyproject.toml)
+              VERSION=$(cat pyproject.toml | grep '^version =' | awk -F'"' '{print $2}')
               echo "VERSION=$VERSION" >> "$GITHUB_ENV"
               echo "::set-output name=version::${VERSION}"
 
