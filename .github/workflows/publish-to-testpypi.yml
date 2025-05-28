@@ -1,12 +1,6 @@
 name: Publish Python 🐍 distribution 📦 to PyPI and TestPyPI
 
-on:
-    workflow_dispatch:
-        inputs:
-          environment:
-            description: 'Environment to deploy to'
-            required: true
-            default: 'testpypi'
+on: workflow_dispatch
 
 jobs:
     build:
