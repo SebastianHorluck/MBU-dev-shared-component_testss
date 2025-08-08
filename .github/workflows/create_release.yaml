@@ -1,0 +1,38 @@
+name: Create Release Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Semantic version number (e.g. 3.2.11)'
+        required: true
+        type: string
+
+jobs:
+  create-release-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Create release branch
+        run: |
+          git fetch origin
+          git checkout origin/develop
+          git checkout -b release/${{ github.event.inputs.version }}
+
+      - name: Update version in pyproject.toml
+        run: |
+          sed -i "s/^version = \".*\"/version = \"${{ github.event.inputs.version }}\"/" pyproject.toml
+
+      - name: Commit version update
+        run: |
+          git add pyproject.toml
+          git commit -m "Update version to ${{ github.event.inputs.version }}"
+          git push origin release/${{ github.event.inputs.version }}
