@@ -2,6 +2,8 @@ name: Create Release Branch
 
 on:
   workflow_dispatch:
+    branches:
+      - develop
     inputs:
       version:
         description: 'Semantic version number (e.g. 3.2.11)'
