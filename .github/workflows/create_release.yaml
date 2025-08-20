@@ -57,7 +57,7 @@ jobs:
       - name: Create release branch
         run: |
           git fetch origin
-          checkout origin/develop
+          git checkout origin/develop
           git checkout -b release/${{ steps.bump_version.outputs.new_version }}
 
       - name: Update version in pyproject.toml
