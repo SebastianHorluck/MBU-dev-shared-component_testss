@@ -68,4 +68,4 @@ jobs:
         run: |
           git add pyproject.toml
           git commit -m "Update version to ${{ steps.bump_version.outputs.new_version }}"
-          git push release/${{ steps.bump_version.outputs.new_version }}
+          git push origin release/${{ steps.bump_version.outputs.new_version }}
